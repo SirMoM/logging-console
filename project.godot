@@ -1,0 +1,40 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[ {
+"base": "Node",
+"class": "LoggingConsoleProxy",
+"language": "GDScript",
+"path": "res://client/ExternalSinkProxy.gd"
+}, {
+"base": "Node",
+"class": "WS_LoggingClient",
+"language": "GDScript",
+"path": "res://client/Client.gd"
+}, {
+"base": "Node",
+"class": "WS_LoggingServer",
+"language": "GDScript",
+"path": "res://server/Server.gd"
+} ]
+_global_script_class_icons={
+"LoggingConsoleProxy": "",
+"WS_LoggingClient": "",
+"WS_LoggingServer": ""
+}
+
+[application]
+
+config/name="LoggingConsole"
+config/icon="res://icon.png"
+
+[autoload]
+
+Logger="*res://logger/logger.gd"
