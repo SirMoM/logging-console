@@ -14,6 +14,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://client/ExternalSinkProxy.gd"
 }, {
+"base": "Reference",
+"class": "UUID",
+"language": "GDScript",
+"path": "res://addons/crypto_uuid_v4/uuid.gd"
+}, {
 "base": "Node",
 "class": "WS_LoggingClient",
 "language": "GDScript",
@@ -26,6 +31,7 @@ _global_script_classes=[ {
 } ]
 _global_script_class_icons={
 "LoggingConsoleProxy": "",
+"UUID": "",
 "WS_LoggingClient": "",
 "WS_LoggingServer": ""
 }
@@ -33,6 +39,7 @@ _global_script_class_icons={
 [application]
 
 config/name="LoggingConsole"
+run/main_scene="res://LogginConsole.tscn"
 config/icon="res://icon.png"
 
 [autoload]

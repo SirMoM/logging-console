@@ -18,6 +18,7 @@ func _init(_name, _root, _queue_mode = QUEUE_NONE).() -> void:
 	
 	_client = WS_LoggingClient.new()
 	_root.call_deferred("add_child", _client)
+	_client.
 
 func flush_buffer():
 	"""Flush the buffer, i.e. write its contents to the target external sink."""

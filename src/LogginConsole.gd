@@ -1,9 +1,9 @@
 extends ColorRect
 
-var _server#: WS_LoggingServer
+var _server: WS_LoggingServer
 
 var log_buffer: Dictionary setget set_log_buffer, get_log_buffer
-
+var db: DB = DB.new()
 
 func set_log_buffer(_new_log_buffer: Dictionary):
 	pass
@@ -24,6 +24,13 @@ func _ready() -> void:
 	_server = WS_LoggingServer.new()
 	get_tree().get_root().call_deferred("add_child", _server)
 	_server.connect("log_received", self, "_on_log_received")
+	db.connect("append", self, "_on_db_change")
+
+func _on_db_change(u_id):
+	var _log: LogMsg = db.get_by_index(u_id)
+	$Messages.add_item(_log.time)
+	$Messages.add_item(_log.module)
+	$Messages.add_item(_log.msg)
 
 func _on_log_received(log_msg: String):
 	var msg_data
@@ -32,45 +39,64 @@ func _on_log_received(log_msg: String):
 		print("Valid JSON.")
 		msg_data = parse_json(log_msg)
 	else:
-		push_error("Invalid JSON: " + invalid)
+		push_error("Invalid JSON: " + invalid)	
 	
 	var key: int = msg_data.level
 	var msg_arr: Array = log_buffer.get(key)
-	msg_arr.append(msg_data.msg)
-	$RichTextLabel.text+= msg_data.msg + "\n"
+	
+	db.add(LogMsg.from_json(msg_data))
+	
 
-class ObservableDictionary:
-	var _dict: Dictionary
+class LogMsg:
 	
-	func clear()->void:
-		_dict.clear()
+	var u_id: UUID
+	var time
+	var level
+	var module
+	var msg
 	
-	func duplicate(deep: bool = false)->Dictionary:
-		return _dict.duplicate()
+	func _init() -> void:
+		u_id = UUID.new()
 	
-	func empty()->bool:
-		return _dict.empty()
-		
-	func erase(key)->bool:
-		return _dict.erase(key)
-		
-	func get(key, default = null)->Object:
-		return _dict.get(key, default)
-		
-	func has(key)->bool:
-		return _dict.has(key)
+	func _to_string() -> String:
+		return "UUID: %s, msg: %s" %[u_id, msg]
 	
-	func has_all(keys: Array)->bool:
-		return _dict.has_all(keys)
+	static func from_json(json: Dictionary) -> LogMsg:
+		var result = LogMsg.new()
+		
+		var msg: String = json.msg
+		msg = msg.replace("[", "")
+		msg = msg.replace("]", "")
+		var msg_tokens: Array = msg.split(" ", false, 3)
+		
+		var format: String = json.format
+		format = format.replace("[", "")
+		format = format.replace("]", "")
+		
+		var format_tokens: Array = format.split(" ", false, 3)
+		var lvl_id = format_tokens.find(Logger.FORMAT_IDS.level)
+		var time_id = format_tokens.find(Logger.FORMAT_IDS.time)
+		var modul_id = format_tokens.find(Logger.FORMAT_IDS.module)
+		
+		result.time = msg_tokens[time_id]
+		result.level = msg_tokens[lvl_id]
+		result.module = msg_tokens[lvl_id]
+		result.msg = msg.replace(result.time, "").replace(result.level, "").replace(result.module, "").strip_edges()
+		return result
+
+class DB:
 	
-	func hash()->int:
-		return _dict.hash()
-		
-	func keys()->Array:
-		return _dict.keys()
-		
-	func size()-> int:
-		return _dict.size()
-		
-	func values()->Array:
-		return _dict.values()
+	signal append(u_id)
+	
+	var _db = {}
+	
+	func add(_log: LogMsg):
+		_db[_log.u_id] = _log
+		emit_signal("append", _log.u_id)
+	
+	func get_by_index(index):
+		return _db[index]
+	
+	
+	
+	
