@@ -2,25 +2,11 @@ extends ColorRect
 
 var _server: WS_LoggingServer
 
-var log_buffer: Dictionary setget set_log_buffer, get_log_buffer
 var db: DB = DB.new()
-
-func set_log_buffer(_new_log_buffer: Dictionary):
-	pass
-
-func get_log_buffer():
-	pass
+var querry_mask = 0
 
 
 func _ready() -> void:
-	log_buffer = {
-		0: [], # verbose
-		1: [], # debug
-		2: [], # info	
-		3: [], # warn
-		4: [], # error
-	}
-	
 	_server = WS_LoggingServer.new()
 	get_tree().get_root().call_deferred("add_child", _server)
 	_server.connect("log_received", self, "_on_log_received")
@@ -41,11 +27,14 @@ func _on_log_received(log_msg: String):
 	else:
 		push_error("Invalid JSON: " + invalid)	
 	
-	var key: int = msg_data.level
-	var msg_arr: Array = log_buffer.get(key)
-	
 	db.add(LogMsg.from_json(msg_data))
 	
+func repopulate_list(array):
+	$Messages.clear()
+	for entry in array:
+		$Messages.add_item(entry.time)
+		$Messages.add_item(entry.module)
+		$Messages.add_item(entry.msg)
 
 class LogMsg:
 	
@@ -89,14 +78,74 @@ class DB:
 	signal append(u_id)
 	
 	var _db = {}
+	var index_verbose = []
+	var index_debug = []
+	var index_info = []
+	var index_warn = []
+	var index_error = []
 	
 	func add(_log: LogMsg):
 		_db[_log.u_id] = _log
+		match _log.level:
+			"VERBOSE":
+				index_verbose.append(_log.u_id)
+			"DEBUG":
+				index_debug.append(_log.u_id)
+			"INFO":
+				index_info.append(_log.u_id)
+			"WARN":
+				index_warn.append(_log.u_id)
+			"ERROR":
+				index_error.append(_log.u_id)
+			_:
+				push_warning("Level not known: %s" % _log.level)
+		
 		emit_signal("append", _log.u_id)
 	
 	func get_by_index(index):
 		return _db[index]
 	
+	func querry(index)->Array:
+		# Bit masks fory easy accses!
+		var verbose_mask = 1
+		var debug_mask = 2
+		var info_mask = 3
+		var warn_mask = 4
+		var error_mask = 5
+		
+		var result = []
+		if index == 0:
+			return _db.values()
+		
+		
+		
+		if checkbit(index, verbose_mask):
+			for index in index_verbose:
+				result.append(_db[index])
+		if checkbit(index, debug_mask):
+			for index in index_debug:
+				result.append(_db[index])
+		if checkbit(index, info_mask):
+			for index in index_info:
+				result.append(_db[index])
+		if checkbit(index, warn_mask):
+			for index in index_warn:
+				result.append(_db[index])
+		if checkbit(index, error_mask):
+			for index in index_error:
+				result.append(_db[index])
+		return result
+
+	# Bit starts with 1, n is the number
+	func checkbit(n, bit):
+		return ((n & (1 << (bit - 1))) > 0)
+
+func _on_Verbose_toggled(button_pressed: bool) -> void:
+	print("pressed: ", button_pressed)
+	if button_pressed:
+		querry_mask += 1
+	else:
+		querry_mask -= 1
 	
-	
-	
+	print(querry_mask)
+	repopulate_list(db.querry(querry_mask))
