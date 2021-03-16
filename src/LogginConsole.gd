@@ -67,7 +67,9 @@ class LogMsg:
 		var time_id = format_tokens.find(Logger.FORMAT_IDS.time)
 		var modul_id = format_tokens.find(Logger.FORMAT_IDS.module)
 		
-		result.time = msg_tokens[time_id]
+		var time_str = msg_tokens[time_id]
+		print(time_str)
+		result.time = time_str
 		result.level = msg_tokens[lvl_id]
 		result.module = msg_tokens[lvl_id]
 		result.msg = msg.replace(result.time, "").replace(result.level, "").replace(result.module, "").strip_edges()
@@ -134,18 +136,32 @@ class DB:
 		if checkbit(index, error_mask):
 			for index in index_error:
 				result.append(_db[index])
+		result.sort_custom(self, "sort_by_time")
 		return result
-
+	
+	func sort_by_time(a:LogMsg, b: LogMsg):
+		a.time
+		return true
+	
 	# Bit starts with 1, n is the number
 	func checkbit(n, bit):
 		return ((n & (1 << (bit - 1))) > 0)
 
 func _on_Verbose_toggled(button_pressed: bool) -> void:
-	print("pressed: ", button_pressed)
 	if button_pressed:
 		querry_mask += 1
 	else:
 		querry_mask -= 1
+	
+	print(querry_mask)
+	repopulate_list(db.querry(querry_mask))
+
+
+func _on_Debug_toggled(button_pressed: bool) -> void:
+	if button_pressed:
+		querry_mask += 2
+	else:
+		querry_mask -= 2
 	
 	print(querry_mask)
 	repopulate_list(db.querry(querry_mask))
